@@ -99,3 +99,28 @@ python3 scripts/memory-janitor.py
 ## License
 
 MIT
+
+## Skills / Integration
+
+### OpenClaw Skill
+
+Copy to your skills directory:
+```bash
+cp -r skills/memory-management ~/.openclaw/skills/
+# or
+cp -r skills/memory-management ~/clawd/skills/
+```
+
+### Claude Code
+
+**Option 1:** Add CLAUDE.md to your project root:
+```bash
+cp claude-code/CLAUDE.md ~/your-project/CLAUDE.md
+```
+
+**Option 2:** Add as a rule:
+```bash
+mkdir -p ~/your-project/.claude/rules
+cp claude-code/.claude/rules/memory-management.md ~/your-project/.claude/rules/
+```
+
