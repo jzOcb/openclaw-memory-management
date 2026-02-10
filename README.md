@@ -1,36 +1,38 @@
 # OpenClaw Memory Management System
 
-AI Agent 记忆越多反而越蠢？这套系统帮你管理 OpenClaw 记忆，Token 降 78%。
+[中文版](README_CN.md)
 
-基于 [@ohxiyu](https://x.com/ohxiyu) 的 P0/P1/P2 方案落地实现。
+Does your AI Agent get dumber as it remembers more? This system helps you manage OpenClaw memory efficiently, reducing token usage by 78%.
 
-## 效果
+Based on [@ohxiyu](https://x.com/ohxiyu)'s P0/P1/P2 priority system.
 
-```
-Before（优化前）          After（优化后）
-├── 行数：427 行          ├── 行数：96 行  (-77%)
-├── Tokens：6,618         ├── Tokens：1,488  (-78%)
-├── 维护：手动            ├── 维护：自动 cron
-├── Iron Rules：17 条散落  ├── Iron Rules：5 条集中
-└── 教训召回：全文扫描     └── 教训召回：语义搜索
-```
-
-## 三层记忆架构
+## Results
 
 ```
-MEMORY.md (热记忆)         ← 每次加载，≤200 行
-├── [P0] 核心身份          ← 永不过期
-├── [P1][date] 活跃项目    ← 90天TTL
-└── [P2][date] 临时        ← 30天TTL
-
-memory/lessons/*.jsonl    ← 结构化教训，语义搜索召回
-memory/archive/           ← 过期内容，可搜索不加载
-memory/YYYY-MM-DD.md      ← 每日原始日志
+Before                        After
+├── Lines: 427                ├── Lines: 96  (-77%)
+├── Tokens: 6,618             ├── Tokens: 1,488  (-78%)
+├── Maintenance: Manual       ├── Maintenance: Auto cron
+├── Iron Rules: 17 scattered  ├── Iron Rules: 5 centralized
+└── Lesson recall: Full scan  └── Lesson recall: Semantic search
 ```
 
-## 快速开始
+## Three-Layer Memory Architecture
 
-### 1. 复制模板文件
+```
+MEMORY.md (Hot Memory)        ← Loaded every session, ≤200 lines
+├── [P0] Core identity        ← Never expires
+├── [P1][date] Active project ← 90-day TTL
+└── [P2][date] Temporary      ← 30-day TTL
+
+memory/lessons/*.jsonl        ← Structured lessons, semantic search
+memory/archive/               ← Expired content, searchable but not loaded
+memory/YYYY-MM-DD.md          ← Daily raw logs
+```
+
+## Quick Start
+
+### 1. Copy template files
 
 ```bash
 cp templates/MEMORY.md ~/.openclaw/workspace/MEMORY.md
@@ -38,73 +40,63 @@ cp scripts/memory-janitor.py ~/.openclaw/workspace/scripts/
 mkdir -p ~/.openclaw/workspace/memory/{archive,lessons}
 ```
 
-### 2. 设置自动归档 cron
+### 2. Set up auto-archive cron
 
 ```bash
-# 每天 4 AM UTC 自动归档
+# Daily at 4 AM UTC
 (crontab -l 2>/dev/null; echo "0 4 * * * python3 ~/.openclaw/workspace/scripts/memory-janitor.py >> ~/.openclaw/workspace/logs/memory-janitor.log 2>&1") | crontab -
 ```
 
-### 3. 手动运行测试
+### 3. Test manually
 
 ```bash
-# 预览模式（不修改文件）
+# Preview mode (no changes)
 python3 scripts/memory-janitor.py --dry-run
 
-# 查看统计
+# Show statistics
 python3 scripts/memory-janitor.py --stats
 
-# 执行归档
+# Run archival
 python3 scripts/memory-janitor.py
 ```
 
-## 文件说明
+## Files
 
-| 文件 | 说明 |
-|------|------|
-| `scripts/memory-janitor.py` | 自动归档脚本，P2>30天/P1>90天 → archive |
-| `templates/MEMORY.md` | 热记忆模板，带 P0/P1/P2 格式示例 |
-| `templates/AGENTS-rules.md` | 5 条核心原则示例 |
-| `templates/lessons.jsonl` | 结构化教训格式示例 |
+| File | Description |
+|------|-------------|
+| `scripts/memory-janitor.py` | Auto-archive script, P2>30d/P1>90d → archive |
+| `templates/MEMORY.md` | Hot memory template with P0/P1/P2 format |
+| `templates/AGENTS-rules.md` | 5 core principles example |
+| `templates/lessons.jsonl` | Structured lesson format |
 
-## P0/P1/P2 优先级说明
+## P0/P1/P2 Priority System
 
-每条记忆格式：`- [P优先级][日期] 内容`
+Format: `- [Priority][Date] Content`
 
-- **P0** — 核心身份，永不过期。例：用户偏好、安全红线
-- **P1** — 活跃项目，90 天过期。例：当前项目、近期策略
-- **P2** — 临时内容，30 天过期。例：调试记录、一次性事件
+- **P0** — Core identity, never expires. e.g., user preferences, safety rules
+- **P1** — Active projects, 90-day TTL. e.g., current projects, recent strategies
+- **P2** — Temporary, 30-day TTL. e.g., debug notes, one-time events
 
 ```markdown
-- [P0] 用户偏好中文回复
-- [P1][2026-02-07] TaxForge v1.4.0 发布
-- [P2][2026-02-05] 调试了 cron 时区问题
+- [P0] User prefers Chinese responses
+- [P1][2026-02-07] TaxForge v1.4.0 released
+- [P2][2026-02-05] Debugged cron timezone issue
 ```
 
-## 核心原则（推荐放 AGENTS.md）
+## Core Principles (for AGENTS.md)
 
-只保留 5 条，其他教训存 `lessons/*.jsonl` 用语义搜索召回：
+Keep only 5 rules. Store other lessons in `lessons/*.jsonl` for semantic search:
 
-1. **真钱 = 正确性 > 速度** — 涉及交易/支付时，用完全相同的已测试代码
-2. **外部操作先问** — 发邮件、发推、公开发帖前必须确认
-3. **自动化两套系统** — 禁用/检查自动化时，查 system crontab + OpenClaw cron
-4. **进程隔离** — 长期运行的 bot 用 setsid，否则会被 session cleanup 杀掉
-5. **平台规则优先** — 新交易/新平台，先读结算规则
-
-## 致谢
-
-- [@ohxiyu](https://x.com/ohxiyu) — P0/P1/P2 优先级方案原创
-- [OpenClaw](https://github.com/openclaw/openclaw) — AI Agent 平台
-
-## License
-
-MIT
+1. **Real money = correctness > speed** — Use identical tested code for transactions
+2. **Confirm before external actions** — Ask before sending emails, tweets, public posts
+3. **Two automation systems** — Check both system crontab + OpenClaw cron
+4. **Process isolation** — Long-running bots need setsid, or they get killed by session cleanup
+5. **Platform rules first** — Read settlement rules before trading on new platforms
 
 ## Skills / Integration
 
 ### OpenClaw Skill
 
-Copy to your skills directory:
 ```bash
 cp -r skills/memory-management ~/.openclaw/skills/
 # or
@@ -113,7 +105,7 @@ cp -r skills/memory-management ~/clawd/skills/
 
 ### Claude Code
 
-**Option 1:** Add CLAUDE.md to your project root:
+**Option 1:** Add CLAUDE.md to project root:
 ```bash
 cp claude-code/CLAUDE.md ~/your-project/CLAUDE.md
 ```
@@ -124,3 +116,11 @@ mkdir -p ~/your-project/.claude/rules
 cp claude-code/.claude/rules/memory-management.md ~/your-project/.claude/rules/
 ```
 
+## Credits
+
+- [@ohxiyu](https://x.com/ohxiyu) — Original P0/P1/P2 priority system
+- [OpenClaw](https://github.com/openclaw/openclaw) — AI Agent platform
+
+## License
+
+MIT
